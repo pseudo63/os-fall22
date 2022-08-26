@@ -27,35 +27,36 @@ int main (int argc, char *argv[]) {
         exit(-1);
     }
 
-    if (strcmp(argv[2], "echo") == 0) {
-        // Open file
-        FILE* f = fopen(argv[1], "r");
-        if (f == NULL) {
-            printf("Error opening file %s\n", argv[1]);
-        }
+    // Open file
+    FILE* f = fopen(argv[1], "r");
+    if (f == NULL) {
+        printf("Error opening file %s\n", argv[1]);
+    }
 
-        // Read by line until EOF
-        char buffer[40]; char trimmed[40];
-        while (fgets(buffer, 40, f) != NULL) {
-            int i;
-            int j = 0;
+    // Read by line until EOF
+    char buffer[40]; char trimmed[40];
+    while (fgets(buffer, 40, f) != NULL) {
+        int i;
+        int j = 0;
 
-            // Remove all whitespace
-            for (i = 0; i < 40; i++) {
-                if (!isspace(buffer[i]) || buffer[i] == '\n') {
-                    trimmed[j] = buffer[i];
-                    j++;
-                }
+        // Remove all whitespace
+        for (i = 0; i < 40; i++) {
+            if (!isspace(buffer[i]) || buffer[i] == '\n') {
+                trimmed[j] = buffer[i];
+                j++;
             }
+        }
+        if (strcmp(argv[2], "echo") == 0) {
             // Echo trimmed line
             printf(trimmed);
+        } else if (strcmp(argv[2], "tail") == 0) {
+            // TODO
+        } else if (strcmp(argv[2], "tail-remove") == 0) {
+            // TODO
+        } else {
+            printf("Unknown command supplied");
+            exit(-1);
         }
-    } else if (strcmp(argv[2], "tail") == 0) {
-        // TODO
-    } else if (strcmp(argv[2], "tail-remove") == 0) {
-        // TODO
-    } else {
-        printf("Unknown command supplied");
-        exit(-1);
-    }
+
+        }
 }
