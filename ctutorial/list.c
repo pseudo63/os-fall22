@@ -33,14 +33,14 @@ int main (int argc, char *argv[]) {
         printf("Error opening file %s\n", argv[1]);
     }
 
-    // Read by line until EOF
-    char buffer[40]; char trimmed[40];
-    while (fgets(buffer, 40, f) != NULL) {
+    // Read by line until EOF - buffer size 40 + 2 for newline and null terminator
+    char buffer[42]; char trimmed[42];
+    while (fgets(buffer, 42, f) != NULL) {
         int i;
         int j = 0;
 
         // Remove all whitespace
-        for (i = 0; i < 40; i++) {
+        for (i = 0; i < 42; i++) {
             if (!isspace(buffer[i]) || buffer[i] == '\n') {
                 trimmed[j] = buffer[i];
                 j++;
@@ -57,6 +57,5 @@ int main (int argc, char *argv[]) {
             printf("Unknown command supplied");
             exit(-1);
         }
-
     }
 }
