@@ -46,14 +46,14 @@ int main (int argc, char *argv[]) {
             // add line to list
             list_insert_tail(&l, trimmed);
         } else {
-            printf("Unknown command supplied");
+            printf("Unknown command supplied\n");
             exit(1);
         }
     }
     fclose(f);
 
     if (!fileNotEmpty) {
-        printf("<empty>");
+        printf("<empty>\n");
         exit(1);
     }
 
