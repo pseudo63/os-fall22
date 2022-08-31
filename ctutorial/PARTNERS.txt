@@ -1,0 +1,4 @@
+Aidan Himley - ah8uqq
+James Long - jal4ch
+
+Code was shared and tracked via a GitHub repository for the project, and communication/collaboration was handled over Discord. Aiden typed the sections regarding the list implementation, while James typed the harness and structual files. Both contributed to testing and debugging.
