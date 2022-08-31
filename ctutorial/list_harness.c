@@ -24,10 +24,11 @@ int main (int argc, char *argv[]) {
     list_init(&l, datum_strcmp, free);
 
     // Read by line until EOF
+    int fileNotEmpty = 0;
     char buffer[BUF_SIZE]; char trimmed[BUF_SIZE];
     while (fgets(buffer, BUF_SIZE, f) != NULL) {
-        int i;
-        int j = 0;
+        int i; int j = 0;
+        fileNotEmpty = 1;
         // Remove all whitespace
         for (i = 0; i < BUF_SIZE; i++) {
             if (!isspace(buffer[i]) || buffer[i] == '\n') {
@@ -50,6 +51,11 @@ int main (int argc, char *argv[]) {
         }
     }
     fclose(f);
+
+    if (!fileNotEmpty) {
+        printf("<empty>");
+        exit(1);
+    }
 
     if (strcmp(argv[2], "tail") == 0) {
         list_visit_items(&l, list_item_print);
