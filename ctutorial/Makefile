@@ -1,5 +1,12 @@
-CC=gcc
-CFLAGS=-I.
+.PHONY: clean
 
-list: list.o
-	$(CC) list.o
+CC=gcc
+CFLAGS=
+
+list_harness: list.o
+	$(CC) $(CFLAGS) list.o -o list_harness
+
+list.o: list.c list.c
+
+clean:
+	rm *.o
