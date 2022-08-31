@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "list.h"
-#define BUF_SIZE 40
+#define BUF_SIZE 42
 
 void list_item_print (void *v) {
     list_item_t *item = (list_item_t *) v;
