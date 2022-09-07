@@ -1,9 +1,10 @@
 CXX = g++
 CXXFLAGS = -Wall -Werror -pedantic -Og -g -std=c++17 -fsanitize=address -fsanitize=undefined -D_GLIBCXX_DEBUG
+OBJS = main.o parser.o
 
 all: msh
 
-msh: main.o
+msh: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 clean:
