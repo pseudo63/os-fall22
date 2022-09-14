@@ -1,0 +1,129 @@
+python3 shell_test.py
+
+
+Failed test 'only redirections is invalid'
+Test input:
+  > foo.txt < test/input.txt
+  exit
+Actual stdout:
+  > > 
+Actual stderr:
+  Expected word, got >
+  
+Expected stdout regular expression pattern: (extra lines allowed)
+  <empty>
+Expected stderr regular expression pattern: (extra lines allowed)
+  .*invalid command.*
+Errors:
+  in stderr: could not find match for pattern [.*invalid command.*] in ['Expected word, got >']
+
+
+
+
+
+Failed test 'fork fails'
+Test input:
+  /bin/echo testing one two three
+  exit
+Actual stdout:
+  > 
+Actual stderr:
+  Fork failed: Resource temporarily unavailable
+  /usr/include/c++/9/debug/vector:427:
+  In function:
+      std::__debug::vector<_Tp, _Allocator>::reference 
+      std::__debug::vector<_Tp, 
+  [plus 14 more lines, not shown]
+Expected stdout regular expression pattern:
+  > > 
+Expected stderr regular expression pattern: (extra lines allowed)
+  .+
+(This test also has some important extra setup code that might do something like restrict the number of file descriptors or child processes that can be created.)
+Errors:
+  in stdout: could not find a match for pattern [> > ] in line [> ]
+  in stdout: could not find match for pattern [> > ] in ['> ']
+
+
+
+
+
+Failed test 'redirect at beginning of command'
+Test input:
+  > test/redirect-stdout-output.txt /bin/echo testing one two three 
+  exit
+Actual stdout:
+  > > 
+Actual stderr:
+  Expected word, got >
+  
+Expected stdout regular expression pattern:
+  .*exit status: 0.*
+  > 
+Expected stderr regular expression pattern:
+  <empty>
+Errors:
+  in stdout: could not find a match for pattern [.*exit status: 0.*] in line [> > ]
+  in stdout: could not find match for pattern [.*exit status: 0.*] in ['> > ']
+  in stderr: unexpected extra output [['Expected word, got >']]
+  file test/redirect-stdout-output.txt was not created
+
+
+
+
+
+Failed test 'extra whitespace in redirect at beginning'
+Test input:
+    >    	test/redirect-stdout-output.txt	  /bin/echo	testing    one   two three 
+  exit
+Actual stdout:
+  > > 
+Actual stderr:
+  Expected word, got >
+  
+Expected stdout regular expression pattern:
+  .*exit status: 0.*
+  > 
+Expected stderr regular expression pattern:
+  <empty>
+Errors:
+  in stdout: could not find a match for pattern [.*exit status: 0.*] in line [> > ]
+  in stdout: could not find match for pattern [.*exit status: 0.*] in ['> > ']
+  in stderr: unexpected extra output [['Expected word, got >']]
+  file test/redirect-stdout-output.txt was not created
+
+
+
+
+
+Failed test 'fork fails in a pipeline'
+Test input:
+  /bin/cat | /bin/cat | /bin/cat | /bin/cat
+  exit
+Actual stdout:
+  > 
+Actual stderr:
+  Fork failed: Resource temporarily unavailable
+  Fork failed: Resource temporarily unavailable
+  Fork failed: Resource temporarily unavailable
+  Fork failed: Resource temporarily unavailable
+  /usr/include/c++/9/debug/vector:427:
+  [plus 17 more lines, not shown]
+Expected stdout regular expression pattern:
+  > > 
+Expected stderr regular expression pattern: (extra lines allowed)
+  .+
+(This test also has some important extra setup code that might do something like restrict the number of file descriptors or child processes that can be created.)
+Errors:
+  in stdout: could not find a match for pattern [> > ] in line [> ]
+  in stdout: could not find match for pattern [> > ] in ['> ']
+
+
+
+83 tests passed and 5 tests failed.
+---
+Note on interpreting test output patterns:
+All expected values matched against a "regular expression" where:
+    .* means any string (including empty strings)
+    .+ means any string (excluding empty strings)
+    everything is matched case-insensitively
+
