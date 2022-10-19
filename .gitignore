@@ -1,0 +1,4 @@
+*.o
+life/life
+life/life-asan
+life/life-tsan

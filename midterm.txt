@@ -1,0 +1,18 @@
+===== Problem 1 =====
+Open - opens the file specified by the first argument and returns an fd to be used to refer to that file. The second argument, flags, indicates access mode - in this case, read/write.
+
+Read - reads data from file
+(args)	
+	o fd of file to be read from
+	o buffer that read data will be written to
+	o max bytes to read
+
+Dup - duplicates an fd. In this case, fd2 refers to the same open file as fd1. They can be used interchangeably, so using one then two will still give sequential lines.
+
+Question: Will calling open in process B keep the position in the file from process A?
+
+===== Problem 4 =====
+There are six options (named 1-6 for notes)
+1 and 2 are mutually exclusive, and very likely one of them is correct. 1 is chosen.
+3 is very strange and likely wrong
+5 does not seem possible
