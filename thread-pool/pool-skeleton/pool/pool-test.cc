@@ -183,7 +183,9 @@ void test_run_in_order(int thread_count, int count, bool submit_first, bool wait
         description = ss.str();
     }
     START_TEST(description);
+    std::cout << "Before ctor" << std::endl;
     ThreadPool pool{thread_count};
+    std::cout << "After ctor" << std::endl;
     pthread_barrier_t barrier;
     pthread_barrier_init(&barrier, NULL, thread_count+1);
     if (submit_first) {
@@ -194,7 +196,9 @@ void test_run_in_order(int thread_count, int count, bool submit_first, bool wait
     std::vector<int> task_result(count, -1);
     for (int i = 0; i < count; ++i) {
         if (DEBUG) std::cout << "submitting  " << T("inc",i) << std::endl;
+        std::cout << "Before submit task" << std::endl;
         pool.SubmitTask(T("inc", i), new RecordIncrementTask(&counter, &destroy_counter, &task_result[i]));
+        std::cout << "After submit task" << std::endl;
     }
     if (submit_first) {
         pthread_barrier_wait(&barrier);
@@ -211,7 +215,9 @@ void test_run_in_order(int thread_count, int count, bool submit_first, bool wait
     if (submit_first) {
         cleanup_barrier_set(&pool, thread_count, &barrier_check_count);
     }
+    std::cout << "Before stop" << std::endl;
     pool.Stop();
+    std::cout << "After stop" << std::endl;
     CHECK("correct number of counter tasks run", counter.load() == count);
     CHECK("correct number of counter tasks deleted", destroy_counter.load() == count);
     for (int i = 0; i < count; ++i) {
