@@ -1,6 +1,12 @@
 #include "pool.h"
+#include <iostream>
+#include <unistd.h>
 
 void* WorkerFunction(void* args);
+struct argstruct {
+    ThreadPool *pool;
+    int thread_id;
+};
 
 Task::Task() {
     // Initialize condition member variable
@@ -27,7 +33,8 @@ ThreadPool::ThreadPool(int num_threads) {
     this->num_threads = num_threads;
 
     for (int i = 0; i < num_threads; i++) {
-        if (pthread_create(&threads[i], NULL, &WorkerFunction, this) != 0) {
+        std::cout << "creating thread " << i << std::endl;
+        if (pthread_create(&threads[i], NULL, WorkerFunction, this) != 0) {
             perror("Failed to create thread");
         }
     }
@@ -54,7 +61,7 @@ void* WorkerFunction(void* args) {
     // Ensure mutual exclusion on task queue. Make sure lock is released before calling run
     // Dequeue a task and call that task's run function
 
-    ThreadPool* pool = (ThreadPool*) args;
+    ThreadPool* pool = (ThreadPool *) args;
 
     while (true) {
         pthread_mutex_lock(&pool->taskMutex);
@@ -62,7 +69,7 @@ void* WorkerFunction(void* args) {
             pthread_cond_wait(&pool->taskReadyCondition, &pool->taskMutex);
         }
         if (pool->stopCalled) {
-            pthread_exit(0);
+            pthread_mutex_unlock(&pool->taskMutex);
             return nullptr;
         }
 
