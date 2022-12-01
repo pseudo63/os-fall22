@@ -1,5 +1,8 @@
 #include "life.h"
+#include <time.h>
+#include <stdio.h>
 #include <pthread.h>
+#include <sched.h>
 
 struct thread_args {
     LifeBoard *state;
@@ -14,7 +17,6 @@ struct thread_args {
 void *simulate_life_thread(void *void_args);
 
 void simulate_life_parallel(int threads, LifeBoard &state, int steps) {
-
     pthread_barrier_t barrier;
 
     if (pthread_barrier_init(&barrier, NULL, threads)) {
@@ -48,40 +50,60 @@ void simulate_life_parallel(int threads, LifeBoard &state, int steps) {
 
     delete[] thread_array;
     delete[] thread_args_array;
+
+    if ((steps & 0x0001) != 0) {
+        swap(state, other_state);
+    }
 }
 
 void *simulate_life_thread(void *void_args) {
     struct thread_args *args = (struct thread_args*) void_args;
+
     for (int step = 0; step < args->steps; ++step) {
         /* We use the range [1, width - 1) here instead of
          * [0, width) because we fix the edges to be all 0s.
          */
-        for (int y = args->start_row; y < args->stop_row; ++y) {
-            for (int x = 1; x < args->state->width() - 1; ++x) {
-                int live_in_window = 0;
-                /* For each cell, examine a 3x3 "window" of cells around it,
-                 * and count the number of live (true) cells in the window. */
-                for (int y_offset = -1; y_offset <= 1; ++y_offset) {
-                    for (int x_offset = -1; x_offset <= 1; ++x_offset) {
-                        if (args->state->at(x + x_offset, y + y_offset)) {
-                            ++live_in_window;
+        if ((step & 0x0001) == 0) { // even
+            for (int y = args->start_row; y < args->stop_row; ++y) {
+                for (int x = 1; x < args->state->width() - 1; ++x) {
+                    int live_in_window = 0;
+                    /* For each cell, examine a 3x3 "window" of cells around it,
+                    * and count the number of live (true) cells in the window. */
+                    for (int y_offset = -1; y_offset <= 1; ++y_offset) {
+                        for (int x_offset = -1; x_offset <= 1; ++x_offset) {
+                            if (args->state->at(x + x_offset, y + y_offset)) {
+                                ++live_in_window;
+                            }
                         }
                     }
+                    /* Cells with 3 live neighbors remain or become live.
+                    Live cells with 2 live neighbors remain live. */
+                    args->other_state->at(x, y) = (live_in_window == 3  || (live_in_window == 4 && args->state->at(x, y)));
+                    /* dead cell with 3 neighbors or live cell with 2 */ /* live cell with 3 neighbors */
                 }
-                /* Cells with 3 live neighbors remain or become live.
-                   Live cells with 2 live neighbors remain live. */
-                args->other_state->at(x, y) = (live_in_window == 3  || (live_in_window == 4 && args->state->at(x, y)));
-                /* dead cell with 3 neighbors or live cell with 2 */ /* live cell with 3 neighbors */
             }
+            pthread_barrier_wait(args->barrier);
+        } else { // odd
+            for (int y = args->start_row; y < args->stop_row; ++y) {
+                for (int x = 1; x < args->state->width() - 1; ++x) {
+                    int live_in_window = 0;
+                    /* For each cell, examine a 3x3 "window" of cells around it,
+                    * and count the number of live (true) cells in the window. */
+                    for (int y_offset = -1; y_offset <= 1; ++y_offset) {
+                        for (int x_offset = -1; x_offset <= 1; ++x_offset) {
+                            if (args->other_state->at(x + x_offset, y + y_offset)) {
+                                ++live_in_window;
+                            }
+                        }
+                    }
+                    /* Cells with 3 live neighbors remain or become live.
+                    Live cells with 2 live neighbors remain live. */
+                    args->state->at(x, y) = (live_in_window == 3  || (live_in_window == 4 && args->other_state->at(x, y)));
+                    /* dead cell with 3 neighbors or live cell with 2 */ /* live cell with 3 neighbors */
+                }
+            }
+            pthread_barrier_wait(args->barrier);
         }
-        pthread_barrier_wait(args->barrier);
-
-        if (args->thread_id == 0) {
-            swap(*args->state, *args->other_state);
-        }
-
-        pthread_barrier_wait(args->barrier);
-
     }
     return 0;
 }
