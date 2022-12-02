@@ -264,6 +264,7 @@ int extract_files(int nblocks, int uid, int gid, char* path) {
 
       // Has valid inode
       int remaining_blocks = ip->size % BLOCK_SZ == 0 ? ip->size / BLOCK_SZ : ip->size / BLOCK_SZ + 1;
+      bitmap[block_index] = 1;
 
       files_found++;
 
@@ -514,8 +515,29 @@ int main(int argc, char* argv[]) // add argument handling
       exit(-1);
     }
 
+    FILE *unused;
+    char unused_filename[120];
+
+    sprintf(unused_filename, "%s/UNUSED_BLOCKS", outputpath);
+
+    unused = fopen(unused_filename, "w");
+    if (!unused) {
+      perror("problem opening file for unused blocks");
+      exit(-1);
+    }
+
+    for (int bitmap_index = 0; bitmap_index < nblocks; bitmap_index++) {
+      if (!bitmap[bitmap_index]) {
+          fprintf(unused, "%d\n", bitmap_index);
+      }
+    }
+
+    if (fclose(unused)) {
+      perror("problem closing unused blocks file");
+      exit(-1);
+    }
+
     printf("Done.\n");
-    return 0;
 
   }
 
