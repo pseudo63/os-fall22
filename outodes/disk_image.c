@@ -44,8 +44,7 @@ void allocate_dblocks(FILE *fpr, int nblocks, int indirect_blockno, int* nbytes)
     write_int((indirect_blockno * BLOCK_SZ) + (dblock_index), direct_blockno);
     bitmap[direct_blockno] = 1;
 
-    fread(rawdata + (direct_blockno * BLOCK_SZ), 1, BLOCK_SZ, fpr);
-    *nbytes += BLOCK_SZ;
+    *nbytes += fread(rawdata + (direct_blockno * BLOCK_SZ), 1, BLOCK_SZ, fpr);
   }
 }
 
@@ -100,8 +99,7 @@ void place_file(char *file, int uid, int gid, int nblocks, int inodepos, int blo
     ip->dblocks[i] = blockno;
     bitmap[blockno] = 1;
 
-    fread(rawdata + (blockno * BLOCK_SZ), 1, BLOCK_SZ, fpr);
-    nbytes += BLOCK_SZ;
+    nbytes += fread(rawdata + (blockno * BLOCK_SZ), 1, BLOCK_SZ, fpr);
   }
 
 
@@ -154,86 +152,57 @@ void place_file(char *file, int uid, int gid, int nblocks, int inodepos, int blo
   }
 }
 
-void check_dblocks(int iblock_no, int* done) {
-  for (int dblock_index = 0; dblock_index < BLOCK_SZ; dblock_index += sizeof(int)) {
+void check_dblocks(int iblock_no, int* remaining_blocks) {
+  for (int dblock_index = 0; (dblock_index < BLOCK_SZ) && *remaining_blocks; dblock_index += sizeof(int)) {
     int direct_blockno = read_int((iblock_no * BLOCK_SZ) + dblock_index);
-    if (direct_blockno != 0) {
-      bitmap[direct_blockno] = 1;
-    } else {
-      *done = 1;
-      return;
-    }
+    bitmap[direct_blockno] = 1;
+    (*remaining_blocks)--;
   }
 }
 
-void check_write_dblocks(int iblock_no, int* done, FILE* fptr) {
-  for (int dblock_index = 0; dblock_index < BLOCK_SZ; dblock_index += sizeof(int)) {
+void check_write_dblocks(int iblock_no, int* remaining_blocks, FILE* fptr) {
+  for (int dblock_index = 0; (dblock_index < BLOCK_SZ) && *remaining_blocks; dblock_index += sizeof(int)) {
     int direct_blockno = read_int((iblock_no * BLOCK_SZ) + dblock_index);
-    if (direct_blockno != 0) {
-      bitmap[direct_blockno] = 1;
-      fwrite(&rawdata[direct_blockno * BLOCK_SZ], 1, BLOCK_SZ, fptr);
-    } else {
-      *done = 1;
-      return;
-    }
+    bitmap[direct_blockno] = 1;
+    fwrite(&rawdata[direct_blockno * BLOCK_SZ], 1, BLOCK_SZ, fptr);
+    (*remaining_blocks)--;
   }
 }
 
-void check_iblocks(int i2block_no, int* done) {
-  for (int iblock_index = 0; iblock_index < BLOCK_SZ; iblock_index += sizeof(int)) {
+void check_iblocks(int i2block_no, int* remaining_blocks) {
+  for (int iblock_index = 0; (iblock_index < BLOCK_SZ) && *remaining_blocks; iblock_index += sizeof(int)) {
     int iblock_no = read_int((i2block_no * BLOCK_SZ) + iblock_index);
-    if (iblock_no != 0) {
-      bitmap[iblock_no] = 1;
-      check_dblocks(iblock_no, done);
-    } else {
-      *done = 1;
-      return;
-    }
+    bitmap[iblock_no] = 1;
+    check_dblocks(iblock_no, remaining_blocks);
   }
 }
 
-void check_write_iblocks(int i2block_no, int* done, FILE* fptr) {
-  for (int iblock_index = 0; iblock_index < BLOCK_SZ; iblock_index += sizeof(int)) {
+void check_write_iblocks(int i2block_no, int* remaining_blocks, FILE* fptr) {
+  for (int iblock_index = 0; (iblock_index < BLOCK_SZ) && *remaining_blocks; iblock_index += sizeof(int)) {
     int iblock_no = read_int((i2block_no * BLOCK_SZ) + iblock_index);
-    if (iblock_no != 0) {
-      bitmap[iblock_no] = 1;
-      check_write_dblocks(iblock_no, done, fptr);
-    } else {
-      *done = 1;
-      return;
-    }
+
+    bitmap[iblock_no] = 1;
+    check_write_dblocks(iblock_no, remaining_blocks, fptr);
   }
 }
 
-void check_i2blocks(int i3block_no, int* done) {
-  for (int i2block_index = 0; i2block_index < BLOCK_SZ; i2block_index += sizeof(int)) {
+void check_i2blocks(int i3block_no, int* remaining_blocks) {
+  for (int i2block_index = 0; (i2block_index < BLOCK_SZ) && *remaining_blocks; i2block_index += sizeof(int)) {
     int i2block_no = read_int((i3block_no * BLOCK_SZ) + i2block_index);
-    if (i2block_no != 0) {
-      bitmap[i2block_no] = 1;
-      check_iblocks(i2block_no, done);
-    } else {
-      *done = 1;
-      return;
-    }
+    bitmap[i2block_no] = 1;
+    check_iblocks(i2block_no, remaining_blocks);
   }
 }
 
-void check_write_i2blocks(int i3block_no, int* done, FILE* fptr) {
-  for (int i2block_index = 0; i2block_index < BLOCK_SZ; i2block_index += sizeof(int)) {
+void check_write_i2blocks(int i3block_no, int* remaining_blocks, FILE* fptr) {
+  for (int i2block_index = 0; (i2block_index < BLOCK_SZ) && *remaining_blocks; i2block_index += sizeof(int)) {
     int i2block_no = read_int((i3block_no * BLOCK_SZ) + i2block_index);
-    if (i2block_no != 0) {
-      bitmap[i2block_no] = 1;
-      check_write_iblocks(i2block_no, done, fptr);
-    } else {
-      *done = 1;
-      return;
-    }
+    bitmap[i2block_no] = 1;
+    check_write_iblocks(i2block_no, remaining_blocks, fptr);
   }
 }
 
 void recreate_bitmap(int iblocks) {
-
-  int done = 0;
 
   for (int block_index = 0; block_index < iblocks; block_index++) {
     // Looping throuh each ip in a block
@@ -241,56 +210,39 @@ void recreate_bitmap(int iblocks) {
       
       struct inode *ip = (struct inode *) &rawdata[block_index * BLOCK_SZ + ipidx];
 
-      done = 0;
       
       if (ip->nlink == 0) continue;
-      for (int dblock_index = 0; dblock_index < N_DBLOCKS; dblock_index++) {
+
+      int remaining_blocks = ip->size % BLOCK_SZ == 0 ? ip->size / BLOCK_SZ : ip->size / BLOCK_SZ + 1;
+
+      for (int dblock_index = 0; (dblock_index < N_DBLOCKS) && remaining_blocks; dblock_index++) {
         
         int dblock_no = ip->dblocks[dblock_index];
-        
-        if (dblock_no != 0) {
-          bitmap[dblock_no] = 1;
-        } else {
-          done = 1;
-          break;
-        }
+        bitmap[dblock_no] = 1;
+        remaining_blocks--;
       }
 
-      if (done) continue;
-
-      for (int iblock_index = 0; iblock_index < N_IBLOCKS; iblock_index++) {
+      for (int iblock_index = 0; (iblock_index < N_IBLOCKS) && remaining_blocks; iblock_index++) {
         
-        if (done) break;
         int iblock_no = ip->iblocks[iblock_index];
+        bitmap[iblock_no] = 1;
+        check_dblocks(iblock_no, &remaining_blocks);
+      }
+
+      if (remaining_blocks) {
         
-        if (iblock_no != 0) {
-          bitmap[iblock_no] = 1;
-          check_dblocks(iblock_no, &done);
-        } else {
-          done = 1;
-          break;
-        }
-      }
-
-      if (done) continue;
-
-      int i2block_no = ip->i2block;
-
-      if (i2block_no != 0) {
+        int i2block_no = ip->i2block;
         bitmap[i2block_no] = 1;
-        check_iblocks(i2block_no, &done);
-      } else {
-        continue;
+        check_iblocks(i2block_no, &remaining_blocks);
+
       }
 
-      if (done) continue;
+      if (remaining_blocks) {
 
-      int i3block_no = ip->i3block;
-      if (i3block_no != 0) {
+        int i3block_no = ip->i3block;
         bitmap[i3block_no] = 1;
-        check_i2blocks(i3block_no, &done);
-      } else {
-        continue;
+        check_i2blocks(i3block_no, &remaining_blocks);
+
       }
     }
   }
@@ -300,7 +252,6 @@ void recreate_bitmap(int iblocks) {
 int extract_files(int nblocks, int uid, int gid, char* path) {
   
   int files_found = 0;
-  int done = 0;
   
   for (int block_index = 0; block_index < nblocks; block_index++) {
     for (int ipidx = 0; (ipidx + sizeof(struct inode)) <= BLOCK_SZ; ipidx += sizeof(struct inode)) {
@@ -310,6 +261,9 @@ int extract_files(int nblocks, int uid, int gid, char* path) {
       if (!(ip->uid == uid && ip->gid == gid)) {
         continue;
       }
+
+      // Has valid inode
+      int remaining_blocks = ip->size % BLOCK_SZ == 0 ? ip->size / BLOCK_SZ : ip->size / BLOCK_SZ + 1;
 
       files_found++;
 
@@ -324,63 +278,45 @@ int extract_files(int nblocks, int uid, int gid, char* path) {
         exit(-1);
       }
 
-      done = 0;
-      
-      if (ip->nlink == 0) goto close_file;
-      for (int dblock_index = 0; dblock_index < N_DBLOCKS; dblock_index++) {
-        
+
+      for (int dblock_index = 0; (dblock_index < N_DBLOCKS) && remaining_blocks; dblock_index++) {
+
         int dblock_no = ip->dblocks[dblock_index];
         
-        if (dblock_no != 0) {
-          bitmap[dblock_no] = 1;
-          fwrite(&rawdata[dblock_no * BLOCK_SZ], 1, BLOCK_SZ, fptr);
-        } else {
-          done = 1;
-          goto close_file;
-        }
+        bitmap[dblock_no] = 1;
+        fwrite(&rawdata[dblock_no * BLOCK_SZ], 1, BLOCK_SZ, fptr);
+        remaining_blocks--;
       }
 
-      if (done) goto close_file;
-
-      for (int iblock_index = 0; iblock_index < N_IBLOCKS; iblock_index++) {
+      for (int iblock_index = 0; (iblock_index < N_IBLOCKS) && remaining_blocks; iblock_index++) {
         
-        if (done) goto close_file;
         int iblock_no = ip->iblocks[iblock_index];
         
-        if (iblock_no != 0) {
-          bitmap[iblock_no] = 1;
-          check_write_dblocks(iblock_no, &done, fptr);
-        } else {
-          done = 1;
-          goto close_file;
-        }
+        bitmap[iblock_no] = 1;
+        check_write_dblocks(iblock_no, &remaining_blocks, fptr);
       }
 
-      if (done) goto close_file;
-
-      int i2block_no = ip->i2block;
-
-      if (i2block_no != 0) {
+      
+      if (remaining_blocks) {
+        
+        int i2block_no = ip->i2block;
+        
         bitmap[i2block_no] = 1;
-        check_write_iblocks(i2block_no, &done, fptr);
-      } else {
-        goto close_file;
+        check_write_iblocks(i2block_no, &remaining_blocks, fptr);
       }
 
-      if (done) goto close_file;
-
-      int i3block_no = ip->i3block;
-      if (i3block_no != 0) {
+      if (remaining_blocks) {
+      
+        int i3block_no = ip->i3block;
+        
         bitmap[i3block_no] = 1;
-        check_write_i2blocks(i3block_no, &done, fptr);
-      } else {
-        goto close_file;
+        check_write_i2blocks(i3block_no, &remaining_blocks, fptr); 
       }
 
-      close_file:
-        if(fclose(fptr)) {
-          perror("schlonk");
-        }
+      truncate(filename, ip->size);
+      if(fclose(fptr)) {
+        perror("schlonk");
+      }
     }
   }
 
